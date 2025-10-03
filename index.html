@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <title>My Photo Gallery</title>
   <style>
-    body { font-family: Arial, sans-serif; text-align: center; background:#fafafa; }
-    h1 { color:#333; }
+    body { font-family: Arial, sans-serif; text-align: center; background:#fafafa; margin:0; }
+    h1 { color:#333; margin: 20px 0 10px; }
     .gallery {
       display: flex;
       flex-wrap: wrap;
@@ -21,15 +21,53 @@
       transition: transform 0.2s;
       cursor: pointer;
     }
-    .gallery img:hover {
-      transform: scale(1.05);
+    .gallery img:hover { transform: scale(1.05); }
+
+    /* Lightbox (click-to-enlarge) */
+    .lightbox {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      display: none;              /* toggled to flex via .open */
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 9999;
+    }
+    .lightbox.open { display: flex; }
+    .lightbox img {
+      max-width: 90vw;
+      max-height: 90vh;
+      border-radius: 12px;
+      box-shadow: 0 12px 32px rgba(0,0,0,0.6);
+    }
+    .lb-close, .lb-prev, .lb-next {
+      position: absolute;
+      border: none;
+      background: rgba(0,0,0,0.5);
+      color: #fff;
+      font-size: 20px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      cursor: pointer;
+      line-height: 1;
+      user-select: none;
+    }
+    .lb-close { top: 20px; right: 20px; }
+    .lb-prev  { left: 20px; top: 50%; transform: translateY(-50%); }
+    .lb-next  { right: 20px; top: 50%; transform: translateY(-50%); }
+
+    /* Make buttons a bit larger on touch devices */
+    @media (hover: none) {
+      .lb-close, .lb-prev, .lb-next { font-size: 24px; padding: 14px 18px; }
     }
   </style>
 </head>
 <body>
   <h1>My Photo Gallery</h1>
+
   <div class="gallery">
-    <!-- Replace with your 31 images -->
+    <!-- Replace with your 31 images (you can keep these URLs) -->
     <img src="https://mcusercontent.com/e7bc12a194c111447c14f69bd/images/cf320d85-083f-62cb-af58-a4a184abd677.jpg" alt="Photo 1">
     <img src="https://mcusercontent.com/e7bc12a194c111447c14f69bd/images/fed16cb8-7b55-4f6f-1ee9-702f6eeb9934.jpg" alt="Photo 2">
     <img src="https://mcusercontent.com/e7bc12a194c111447c14f69bd/images/89053235-8b2d-4a9a-92fe-1fc4e19e9767.jpg" alt="Photo 3">
@@ -61,6 +99,73 @@
     <img src="https://mcusercontent.com/e7bc12a194c111447c14f69bd/images/5e5ec540-0bd6-f3a7-c5a8-ed8fcbd6b410.jpg" alt="Photo 29">
     <img src="https://mcusercontent.com/e7bc12a194c111447c14f69bd/images/b956a88f-1843-2f1f-841d-b3ae7a30608a.jpg" alt="Photo 30">
     <img src="https://mcusercontent.com/e7bc12a194c111447c14f69bd/images/b956a88f-1843-2f1f-841d-b3ae7a30608a.jpg" alt="Photo 31">
+    <!-- …continue adding your remaining images up to 31… -->
   </div>
+
+  <!-- Lightbox overlay -->
+  <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Image viewer">
+    <button class="lb-close" aria-label="Close (Esc)">&times;</button>
+    <button class="lb-prev"  aria-label="Previous (←)">&#10094;</button>
+    <img id="lightbox-img" alt="">
+    <button class="lb-next"  aria-label="Next (→)">&#10095;</button>
+  </div>
+
+  <script>
+    (function () {
+      const thumbs = Array.from(document.querySelectorAll('.gallery img'));
+      const lb = document.getElementById('lightbox');
+      const lbImg = document.getElementById('lightbox-img');
+      const btnClose = lb.querySelector('.lb-close');
+      const btnPrev  = lb.querySelector('.lb-prev');
+      const btnNext  = lb.querySelector('.lb-next');
+      let idx = -1;
+
+      function openLightbox(i) {
+        idx = i;
+        const img = thumbs[idx];
+        lbImg.src = img.src;
+        lbImg.alt = img.alt || '';
+        lb.classList.add('open');
+        document.body.style.overflow = 'hidden'; // prevent background scroll
+      }
+
+      function closeLightbox() {
+        lb.classList.remove('open');
+        lbImg.src = '';
+        document.body.style.overflow = '';
+      }
+
+      function show(delta) {
+        if (idx < 0) return;
+        idx = (idx + delta + thumbs.length) % thumbs.length;
+        const img = thumbs[idx];
+        lbImg.src = img.src;
+        lbImg.alt = img.alt || '';
+      }
+
+      // Click any thumbnail to open
+      thumbs.forEach((img, i) => {
+        img.addEventListener('click', () => openLightbox(i));
+      });
+
+      // Controls
+      btnClose.addEventListener('click', closeLightbox);
+      btnPrev .addEventListener('click', () => show(-1));
+      btnNext .addEventListener('click', () => show(1));
+
+      // Close when clicking backdrop (but not when clicking the image or buttons)
+      lb.addEventListener('click', (e) => {
+        if (e.target === lb) closeLightbox();
+      });
+
+      // Keyboard: Esc to close, arrows to navigate
+      document.addEventListener('keydown', (e) => {
+        if (!lb.classList.contains('open')) return;
+        if (e.key === 'Escape') closeLightbox();
+        if (e.key === 'ArrowLeft') show(-1);
+        if (e.key === 'ArrowRight') show(1);
+      });
+    })();
+  </script>
 </body>
 </html>
